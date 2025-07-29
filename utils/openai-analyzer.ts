@@ -20,15 +20,15 @@ export interface PromotionCategory {
 }
 
 export const analyzeDiscountRequest = async (message: string): Promise<AnalysisResult> => {
-  if (!process.env.OPENAI_API_KEY) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  
+  if (!apiKey) {
     console.warn('OPENAI_API_KEY not found, using fallback analysis');
     return fallbackAnalysis(message);
   }
   
   try {
     // Initialize OpenAI client inside the function
-    const apiKey = process.env.OPENAI_API_KEY 
-    console.log('Using API key:', apiKey.substring(0, 20) + '...');
     
     const openai = new OpenAI({
       apiKey: apiKey,
