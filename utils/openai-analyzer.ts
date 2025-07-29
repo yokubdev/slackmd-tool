@@ -34,7 +34,7 @@ export const analyzeDiscountRequest = async (message: string): Promise<AnalysisR
   
   try {
     // Initialize OpenAI client inside the function
-    const apiKey = process.env.OPENAI_API_KEY || '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';
+    const apiKey = process.env.OPENAI_API_KEY 
     console.log('Using API key:', apiKey.substring(0, 20) + '...');
     
     const openai = new OpenAI({
