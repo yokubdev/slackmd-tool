@@ -44,7 +44,21 @@ Before you can run the app, you'll need to store some environment variables.
 
 Every incoming request is routed to a "listener". Inside this directory, we group each listener based on the Slack Platform feature used, so `/listeners/shortcuts` handles incoming [Shortcuts](https://api.slack.com/interactivity/shortcuts) requests, `/listeners/views` handles [View submissions](https://api.slack.com/reference/interaction-payloads/views#view_submission) and so on.
 
-## App Distribution / OAuth
+## Features
+
+### Promotion Analysis & CSV Export
+
+This app includes intelligent promotion analysis that can:
+- Analyze promotion messages using OpenAI
+- Extract structured promotion data (title, date, categories, discounts, definitions, exclusions)
+- Generate and upload CSV files to Slack threads
+- Provide fallback text responses if CSV upload fails
+
+The CSV files include all promotion details in a structured format that can be easily imported into spreadsheet applications.
+
+**Required Permissions:** The app requires the `files:write` scope to upload CSV files to Slack channels.
+
+### App Distribution / OAuth
 
 Only implement OAuth if you plan to distribute your application across multiple workspaces. A separate `app-oauth.ts` file can be found with relevant OAuth settings.
 

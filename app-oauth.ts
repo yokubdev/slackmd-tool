@@ -13,7 +13,7 @@ const app = new App({
   clientId: process.env.SLACK_CLIENT_ID,
   clientSecret: process.env.SLACK_CLIENT_SECRET,
   stateSecret: 'my-state-secret',
-  scopes: ['channels:history', 'chat:write', 'commands'],
+  scopes: ['channels:history', 'chat:write', 'commands', 'files:write'],
   installationStore: {
     storeInstallation: async (installation) => {
       // Org-wide installation

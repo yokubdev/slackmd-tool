@@ -1,8 +1,10 @@
 import type { App } from '@slack/bolt';
-import sampleMessageCallback from './sample-message';
+import channelJoinCallback from './channel-join';
+import discountPromotionCallback from './discount-promotion';
 
 const register = (app: App) => {
-  app.message(/^(hi|hello|hey).*/, sampleMessageCallback);
+  app.message(channelJoinCallback);
+  app.message(discountPromotionCallback);
 };
 
 export default { register };

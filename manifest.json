@@ -4,7 +4,7 @@
         "minor_version": 1
     },
     "display_information": {
-        "name": "Bolt Template App"
+        "name": "Promotion to Table"
     },
     "features": {
         "app_home": {
@@ -37,7 +37,9 @@
             "bot": [
                 "channels:history",
                 "chat:write",
-                "commands"
+                "commands",
+                "files:read",
+                "files:write"
             ]
         }
     },
