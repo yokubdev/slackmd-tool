@@ -1,4 +1,7 @@
 import OpenAI from 'openai';
+import { createObjectCsvWriter } from 'csv-writer';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface AnalysisResult {
   answer: 'yes' | 'no';
@@ -21,7 +24,7 @@ export interface PromotionCategory {
 
 export const analyzeDiscountRequest = async (message: string): Promise<AnalysisResult> => {
   const apiKey = process.env.OPENAI_API_KEY;
-  
+
   if (!apiKey) {
     console.warn('OPENAI_API_KEY not found, using fallback analysis');
     return fallbackAnalysis(message);
@@ -84,6 +87,7 @@ Only return valid JSON, no other text.`;
     
     try {
       const parsedResponse = JSON.parse(response || '{}');
+      console.log('parsedResponse=====:', response);
       
       if (parsedResponse.isPromotion && parsedResponse.promotionData) {
         return {
@@ -95,7 +99,6 @@ Only return valid JSON, no other text.`;
       }
     } catch (parseError) {
       console.error('Error parsing OpenAI response:', parseError);
-      // Fallback to local extraction
       const promotionData = extractPromotionData(message);
       if (promotionData) {
         return {
@@ -107,12 +110,10 @@ Only return valid JSON, no other text.`;
     }
   } catch (error) {
     console.error('Error analyzing message with OpenAI:', error);
-    // Fallback to keyword-based analysis
     return fallbackAnalysis(message);
   }
 };
 
-// Fallback analysis using keyword matching
 const fallbackAnalysis = (message: string): AnalysisResult => {
   const discountKeywords = [
     'discount',
@@ -169,10 +170,6 @@ const extractPromotionData = (message: string): PromotionData | null => {
     // Extract categories and discounts dynamically
     const categories: PromotionCategory[] = [];
     
-    // Dynamic pattern to find any product with discount
-    // This will match patterns like:
-    // "Product Name - $X Off" or "Product Name - X% Off"
-    // "Product Name - $X Off\nDefinition: Some definition"
     const discountPatterns = [
       // Percentage off pattern
       /([A-Za-z\s&]+)\s*-\s*(\d+)%\s+Off/gi,
@@ -273,35 +270,29 @@ const extractPromotionData = (message: string): PromotionData | null => {
   }
 };
 
-// Function to create markdown table
-export const createPromotionTable = (promotionData: PromotionData): string => {
-  const title = promotionData.title;
-  const date = promotionData.date;
+// Function to create CSV file from promotion data
+  export const createPromotionCSV = async (promotionData: PromotionData): Promise<string> => {  
+  const timestamp = new Date().getTime();
+  const filename = `promotion_${timestamp}.csv`;
+  const filepath = path.join(process.cwd(), 'temp', filename);
   
-  let table = `# ${title}${date ? ` – ${date}` : ''}\n\n`;
-  table += `| Category | Discount | Definition | Exclusions |\n`;
-  table += `|----------|----------|------------|------------|\n`;
+  // Ensure temp directory exists
+  const tempDir = path.join(process.cwd(), 'temp');
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
   
-  promotionData.categories.forEach(category => {
-    table += `| ${category.category} | ${category.discount} | ${category.definition} | ${category.exclusions} |\n`;
+  const csvWriter = createObjectCsvWriter({
+    path: filepath,
+    header: [
+      { id: 'category', title: 'Category' },
+      { id: 'discount', title: 'Discount' },
+      { id: 'definition', title: 'Definition' },
+      { id: 'exclusions', title: 'Exclusions' }
+    ]
   });
   
-  return table;
-};
-
-// Function to create markdown table in code block format for Slack
-export const createPromotionCodeBlock = (promotionData: PromotionData): string => {
-  const title = promotionData.title;
-  const date = promotionData.date;
+  await csvWriter.writeRecords(promotionData.categories);
   
-  let table = `${title}${date ? ` – ${date}` : ''}\n\n`;
-  table += `| Category | Discount | Definition | Exclusions |\n`;
-  table += `|----------|----------|------------|------------|\n`;
-  
-  promotionData.categories.forEach(category => {
-    table += `| ${category.category} | ${category.discount} | ${category.definition} | ${category.exclusions} |\n`;
-  });
-  
-  // Wrap in code block
-  return `\`\`\`\n${table}\n\`\`\``;
+  return filepath;
 }; 

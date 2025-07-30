@@ -1,78 +1,82 @@
 import type { AllMiddlewareArgs, SlackEventMiddlewareArgs } from '@slack/bolt';
-import { analyzeDiscountRequest, createPromotionCodeBlock } from '../../utils/openai-analyzer';
+import { analyzeDiscountRequest, createPromotionCSV } from '../../utils/openai-analyzer';
+import * as fs from 'fs';
 
 const discountPromotionCallback = async ({
   event,
-  say,
   logger,
   client,
 }: AllMiddlewareArgs & SlackEventMiddlewareArgs<'message'>) => {
 
   try {
-    // Only process regular messages (not message_changed, etc.)
     if (event.type !== 'message') { 
       return;
     }
     
-    // Type guard to ensure we have a regular message event
     if ('subtype' in event && event.subtype) {
-      // Skip non-regular messages
       return;
     }
     
-    // Now we can safely access text property
     const messageEvent = event as any;
     const messageText = messageEvent.text || '';
     
-    // Use OpenAI to analyze the message
+    logger.info('Received message:', messageText);
+    
     const analysis = await analyzeDiscountRequest(messageText);
     
+    logger.info('Analysis result:', analysis);
+    
     if (analysis.answer === 'yes') {
-      // If we have promotion data, create markdown table and send it
+      console.log('analysis.promotionData===', analysis.promotionData);
       if (analysis.promotionData) {
+        let csvFilePath: string | undefined;
         try {
-          logger.info('Creating promotion table for:', analysis.promotionData.title);
+          logger.info('Creating promotion CSV for:', analysis.promotionData.title);
           
-          // Create markdown table in code block format
-          const promotionTable = createPromotionCodeBlock(analysis.promotionData);
+          csvFilePath = await createPromotionCSV(analysis.promotionData);
+          logger.info('CSV file created at:', csvFilePath);
           
-          // Send the promotion table as a code block
-          await client.chat.postMessage({
-            channel: event.channel,
-            thread_ts: event.ts, // Reply in thread
-            text: 'Here is the promotion data. Please review and confirm if correct:',
-            blocks: [
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text: "Here is the promotion data. Please review and confirm if correct:"
-                }
-              },
-              {
-                type: "section",
-                text: {
-                  type: "mrkdwn",
-                  text: promotionTable
-                }
-              }
-            ]
+          // Upload the CSV file to Slack
+          logger.info('Uploading CSV file to Slack...');
+          const fileBuffer = fs.readFileSync(csvFilePath);
+          
+          // Extract date from promotion data or message
+          const promotionDate = analysis.promotionData.date || 'Not specified';
+          
+          const uploadResult = await client.files.uploadV2({
+            channel_id: event.channel,
+            thread_ts: event.ts,
+            file: fileBuffer,
+            filename: `promotion_${analysis.promotionData.title.replace(/\s+/g, '_')}.csv`,
+            title: `${analysis.promotionData.title} - Promotion Data`,
+            initial_comment: `Here is the promotion, can you please confirm if correct?\nPromotion Date: ${promotionDate}`
           });
           
-          logger.info('Promotion table sent successfully');
+          logger.info('File upload result:', uploadResult);
+          
+          // Clean up the temporary file after upload
+          fs.unlinkSync(csvFilePath);
+          
+          logger.info('Promotion CSV uploaded successfully');
           
         } catch (error) {
-          logger.error('Error sending promotion table:', error);
+          logger.error('Error uploading promotion CSV:', error);
           
-          // Fallback to simple text message
+          try {
+            if (csvFilePath && fs.existsSync(csvFilePath)) {
+              fs.unlinkSync(csvFilePath);
+            }
+          } catch (cleanupError) {
+            logger.error('Error cleaning up CSV file:', cleanupError);
+          }
+          
           await client.chat.postMessage({
             channel: event.channel,
             thread_ts: event.ts,
-            text: 'Yes, I can help with that promotion request.'
+            text: 'Yes, I can help with that promotion request. However, there was an issue creating the CSV file.'
           });
         }
       } else {
-        // Simple response if no promotion data
         await client.chat.postMessage({
           channel: event.channel,
           thread_ts: event.ts,
