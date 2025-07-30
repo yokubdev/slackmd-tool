@@ -1,7 +1,7 @@
 {
-  "name": "bolt-ts-starter-template",
+  "name": "promotion-to-table-bot",
   "version": "1.0.0",
-  "description": "A scaffold template for Slack apps",
+  "description": "Promotion to Table Bot",
   "main": "dist/app.js",
   "scripts": {
     "build": "tsc",
@@ -10,7 +10,7 @@
     "lint:fix": "npx @biomejs/biome check --write *.ts listeners",
     "test": "npm run build && npm run lint"
   },
-  "author": "Slack Technologies, LLC",
+  "author": "github.com/yokubdev",
   "license": "MIT",
   "keywords": [
     "slack",

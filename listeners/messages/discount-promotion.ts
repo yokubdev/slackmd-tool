@@ -27,7 +27,6 @@ const discountPromotionCallback = async ({
     logger.info('Analysis result:', analysis);
     
     if (analysis.answer === 'yes') {
-      console.log('analysis.promotionData===', analysis.promotionData);
       if (analysis.promotionData) {
         let csvFilePath: string | undefined;
         try {
@@ -36,12 +35,11 @@ const discountPromotionCallback = async ({
           csvFilePath = await createPromotionCSV(analysis.promotionData);
           logger.info('CSV file created at:', csvFilePath);
           
-          // Upload the CSV file to Slack
-          logger.info('Uploading CSV file to Slack...');
           const fileBuffer = fs.readFileSync(csvFilePath);
           
-          // Extract date from promotion data or message
           const promotionDate = analysis.promotionData.date || 'Not specified';
+          
+          const senderMention = event.user ? `<@${event.user}>` : '';
           
           const uploadResult = await client.files.uploadV2({
             channel_id: event.channel,
@@ -49,12 +47,11 @@ const discountPromotionCallback = async ({
             file: fileBuffer,
             filename: `promotion_${analysis.promotionData.title.replace(/\s+/g, '_')}.csv`,
             title: `${analysis.promotionData.title} - Promotion Data`,
-            initial_comment: `Here is the promotion, can you please confirm if correct?\nPromotion Date: ${promotionDate}`
+            initial_comment: `${senderMention}! Here is the promotion, can you please confirm if correct?\nPromotion Date: ${promotionDate}`
           });
           
           logger.info('File upload result:', uploadResult);
           
-          // Clean up the temporary file after upload
           fs.unlinkSync(csvFilePath);
           
           logger.info('Promotion CSV uploaded successfully');

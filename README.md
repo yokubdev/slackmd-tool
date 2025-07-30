@@ -46,15 +46,29 @@ Every incoming request is routed to a "listener". Inside this directory, we grou
 
 ## Features
 
-### Promotion Analysis & CSV Export
+### Promotion Analysis & Completely Dynamic CSV Export
 
 This app includes intelligent promotion analysis that can:
 - Analyze promotion messages using OpenAI
-- Extract structured promotion data (title, date, categories, discounts, definitions, exclusions)
-- Generate and upload CSV files to Slack threads
+- Extract ALL relevant structured data dynamically based on message content
+- Generate CSV files with completely dynamic table structures that adapt to ANY data format
+- Upload CSV files to Slack threads with automatically generated headers
 - Provide fallback text responses if CSV upload fails
 
-The CSV files include all promotion details in a structured format that can be easily imported into spreadsheet applications.
+The CSV files include all promotion details in a structured format that can be easily imported into spreadsheet applications. The table structure is **completely dynamic** and will adapt to ANY type of promotion data, with NO predefined columns:
+
+**Examples of Dynamic Field Detection:**
+- **Mattress Sale**: `product`, `discount`, `price`, `validity`
+- **Furniture Clearance**: `item`, `discount`, `price`, `limit`, `conditions`
+- **Electronics Promo**: `merchandise`, `discount`, `exclusions`, `validity`
+- **Gaming Bundle**: `product`, `discount`, `price`, `bundle`, `warranty`
+
+**Key Features:**
+- **Zero Predefined Columns**: No assumptions about data structure - everything is determined by content
+- **Completely Dynamic Headers**: Table columns are automatically generated based on actual data fields
+- **Intelligent Extraction**: Uses OpenAI to understand and extract ALL relevant information from any promotion message
+- **Fallback Support**: Works even when OpenAI is unavailable using pattern matching
+- **Future-Proof**: Can handle any new field types without code changes
 
 **Required Permissions:** The app requires the `files:write` scope to upload CSV files to Slack channels.
 
