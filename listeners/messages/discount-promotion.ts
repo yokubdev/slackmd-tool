@@ -1,5 +1,5 @@
 import type { AllMiddlewareArgs, SlackEventMiddlewareArgs } from '@slack/bolt';
-import { analyzeDiscountRequest, createPromotionCSV } from '../../utils/openai-analyzer';
+import { analyzeDiscountRequest, createPromotionCSV } from '../../utils/anthropic-analyzer';
 import * as fs from 'fs';
 
 const discountPromotionCallback = async ({
@@ -35,7 +35,7 @@ const discountPromotionCallback = async ({
           csvFilePath = await createPromotionCSV(analysis.promotionData);
           logger.info('CSV file created at:', csvFilePath);
           
-          const fileBuffer = fs.readFileSync(csvFilePath);
+          const fileBuffer = fs.readFileSync(csvFilePath!);
           
           const promotionDate = analysis.promotionData.date || 'Not specified';
           
@@ -60,8 +60,8 @@ const discountPromotionCallback = async ({
           logger.error('Error uploading promotion CSV:', error);
           
           try {
-            if (csvFilePath && fs.existsSync(csvFilePath)) {
-              fs.unlinkSync(csvFilePath);
+            if (csvFilePath && fs.existsSync(csvFilePath!)) {
+              fs.unlinkSync(csvFilePath!);
             }
           } catch (cleanupError) {
             logger.error('Error cleaning up CSV file:', cleanupError);

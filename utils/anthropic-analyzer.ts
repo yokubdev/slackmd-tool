@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { createObjectCsvWriter } from "csv-writer";
 import * as fs from "fs";
 import * as path from "path";
@@ -22,15 +22,15 @@ export interface PromotionCategory {
 export const analyzeDiscountRequest = async (
   message: string
 ): Promise<AnalysisResult> => {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
-    console.warn("OPENAI_API_KEY not found, using fallback analysis");
+    console.warn("ANTHROPIC_API_KEY not found, using fallback analysis");
     return fallbackAnalysis(message);
   }
 
   try {
-    const openai = new OpenAI({
+    const anthropic = new Anthropic({
       apiKey: apiKey,
     });
 
@@ -72,29 +72,22 @@ IMPORTANT:
 
 Only return valid JSON, no other text.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+    const response = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 1500,
+      temperature: 0.1,
       messages: [
-        {
-          role: "system",
-          content:
-            "You are a helpful assistant that analyzes promotion messages and extracts ALL relevant structured data. Always respond with valid JSON only. Do NOT assume any predefined structure - let the actual message content determine what fields to include. Include every piece of relevant information mentioned in the message. IMPORTANT: Exclusions should be included as a field in each product row, NOT as a separate row.",
-        },
         {
           role: "user",
           content: prompt,
         },
       ],
-      max_tokens: 1500,
-      temperature: 0.1,
     });
 
-    const response = completion.choices[0]?.message?.content?.trim();
-    console.log("OpenAI Response:", response);
+    const responseContent = response.content[0]?.text?.trim();
 
     try {
-      const parsedResponse = JSON.parse(response || "{}");
-      console.log("parsedResponse=====:", response);
+      const parsedResponse = JSON.parse(responseContent || "{}");
 
       if (parsedResponse.isPromotion && parsedResponse.promotionData) {
         return {
@@ -105,7 +98,7 @@ Only return valid JSON, no other text.`;
         return { answer: "no" };
       }
     } catch (parseError) {
-      console.error("Error parsing OpenAI response:", parseError);
+      console.error("Error parsing Anthropic response:", parseError);
       const promotionData = extractPromotionData(message);
       if (promotionData) {
         return {
@@ -116,7 +109,7 @@ Only return valid JSON, no other text.`;
       return { answer: "no" };
     }
   } catch (error) {
-    console.error("Error analyzing message with OpenAI:", error);
+    console.error("Error analyzing message with Anthropic:", error);
     return fallbackAnalysis(message);
   }
 };
